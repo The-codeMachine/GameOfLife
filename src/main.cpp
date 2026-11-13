@@ -1,8 +1,12 @@
+#include <World.hpp>
+
 #include <iostream>
 
 int main() {
 
-    std::cout << "Hello, World!\n";
+    World world(10, 10);
+
+    world.run();
 
     return 0;
 }
