@@ -8,7 +8,7 @@
  * 
  * @return the 1D position derived from a 2D position.
  */
-uint32_t convert2Dto1D(uint32_t x, uint32_t y);
+uint32_t convert2Dto1D(uint32_t x, uint32_t y, uint32_t xBounds);
 
 /**
  * Converts a 1D position (x) to a 2D position (x, y).
@@ -16,4 +16,4 @@ uint32_t convert2Dto1D(uint32_t x, uint32_t y);
  * @return the 2D position derived from a 1D position as a standard pair (x 
  * is first then y).
  */
-std::pair<uint32_t, uint32_t> convert1Dto2D(uint32_t x);
+std::pair<uint32_t, uint32_t> convert1Dto2D(uint32_t x, uint32_t xBounds);
