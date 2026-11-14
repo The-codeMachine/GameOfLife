@@ -52,7 +52,7 @@ private:
      * @note uses the same seed for all Worlds (for now, might change it)
      * @note temperature is used as a percentage (e.g. 0.7 = 70%)
      */
-    void fillWorld(float temperature) noexcept;
+    void fillWorld(float temperature);
 
     /**
      * Checks whether or not a cell will be alive during the next tick of the

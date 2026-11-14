@@ -1,144 +1,149 @@
 #include <World.hpp>
-
 #include <utils/positionConversions.hpp>
 
 #include <random>
-
 #include <algorithm>
 #include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <cstdint>
 
-void World::fillWorld(float temperature) noexcept {
+void World::fillWorld(float temperature) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> distrib(1, 100);
 
-    // because the bounds are inclusive, we have to add one
-    // so xBounds = 0 and yBounds = 0 would still result in
-    // 1 cell
+    // Clamp temperature to the valid probability range.
+    temperature = std::clamp(temperature, 0.0f, 1.0f);
 
-    //                      inclusive       inclusive
-    uint64_t indexMax = (m_xBounds + 1) * (m_yBounds + 1);
-    m_cells.resize(indexMax);
-    for (uint64_t i = 0; i < indexMax; ++i) {
-        std::pair coords = convert1Dto2D(i, m_xBounds);
+    std::bernoulli_distribution distrib(temperature);
 
-        //          convert to percentage                   x           y
-        Cell cell = {distrib(gen) <= temperature * 100, coords.first, coords.second};
-        m_cells[i] = cell;
+    const uint64_t width = m_xBounds;
+    const uint64_t height = m_yBounds;
+
+    if (width == 0 || height == 0) {
+        m_cells.clear();
+        return;
     }
-    
+
+    if (width * height > std::numeric_limits<size_t>::max()) {
+        throw std::length_error("World dimensions are too large.");
+    }
+
+    const uint64_t indexMax = width * height;
+    m_cells.resize(static_cast<size_t>(indexMax));
+
+    for (uint64_t i = 0; i < indexMax; ++i) {
+        const auto [x, y] = convert1Dto2D(i, m_xBounds);
+
+        m_cells[i] = {
+            distrib(gen),
+            static_cast<uint32_t>(x),
+            static_cast<uint32_t>(y)
+        };
+    }
 }
 
 std::vector<Cell> World::getNeighbours(Cell cell) const noexcept {
-    uint32_t x = std::max(0, (int)cell.x - 1);
-    uint32_t xMax = std::min(m_xBounds, cell.x + 1);
+    std::vector<Cell> out;
 
-    uint32_t y = std::max(0, (int)cell.y - 1);
-    uint32_t yMax = std::min(m_yBounds, cell.y + 1);
-    
-    std::vector<Cell> out((xMax - x) * (yMax - y));
+    const uint32_t x = cell.x;
+    const uint32_t y = cell.y;
 
-    for (uint32_t i = x; i < xMax; ++i) {
-        for (uint32_t j = y; j < yMax; ++j) {
-            out.push_back(m_cells[convert2Dto1D(i, j, m_xBounds)]);
+    // Exclude the cell itself.
+    const uint32_t xStart = (x > 0) ? x - 1 : 0;
+    const uint32_t yStart = (y > 0) ? y - 1 : 0;
+
+    const uint32_t xEnd = std::min(x + 1, m_xBounds - 1);
+    const uint32_t yEnd = std::min(y + 1, m_yBounds - 1);
+
+    for (uint32_t j = yStart; j <= yEnd; ++j) {
+        for (uint32_t i = xStart; i <= xEnd; ++i) {
+            if (i == x && j == y) {
+                continue;
+            }
+
+            out.push_back(
+                m_cells[convert2Dto1D(i, j, m_xBounds)]
+            );
         }
     }
 
     return out;
 }
 
-// Needs optimization. Currently, because we call getNeighbours we
-// have to iterate over neighbours twice. I don't know how to cleanly
-// solve this, but it is worth a shot. 
-//
-//                           |   |
-//                           |   |
-//                           |   |
-//                        ---+   +---
-//                        \        /
-//                         \      /
-//                          \    /
-//                           \  /
-//                            \/
-
 bool World::isCellAlive(Cell cell) const noexcept {
-    std::vector<Cell> neighbours = getNeighbours(cell);
+    const std::vector<Cell> neighbours = getNeighbours(cell);
 
     uint8_t aliveCounter = 0;
-    for (const Cell cell : neighbours) {
-        if (cell.alive) {
-            aliveCounter++;
+
+    for (const Cell& neighbour : neighbours) {
+        if (neighbour.alive) {
+            ++aliveCounter;
         }
     }
 
-    // if there are 2-3 alive cells, then it survives
-    return !(aliveCounter < 2 || aliveCounter > 3);
-}
+    // Conway's Game of Life:
+    // A live cell survives with 2 or 3 neighbours.
+    // A dead cell becomes alive with exactly 3 neighbours.
 
-// Needs optimization. Currently, we loop through all cells like 3
-// times per cell. I do not know how to cleanly optimize it, but it
-// is worth a shot. Maybe we add the score of each cell (e.g. 1 for 
-// alive and 0 for dead) to each of it's neighbours. Based off this
-// score we check whether or not it is dead. 
-//
-//                           |   |
-//                           |   |
-//                           |   |
-//                        ---+   +---
-//                        \        /
-//                         \      /
-//                          \    /
-//                           \  /
-//                            \/
-
-void World::simulateTick() {
-    std::vector<Cell> cells = m_cells;
-    uint64_t indexMax = (m_xBounds + 1) * (m_yBounds + 1);
-
-    for (uint64_t i = 0; i < indexMax; ++i) {
-        cells[i].alive = isCellAlive(m_cells[i]);
+    if (cell.alive) {
+        return aliveCounter == 2 || aliveCounter == 3;
     }
 
-    m_cells = cells;
+    return aliveCounter == 3;
 }
 
-World::World(uint32_t xBounds, uint32_t yBounds, float temperature) :
-            m_xBounds(xBounds), m_yBounds(yBounds) 
+void World::simulateTick() {
+    std::vector<Cell> nextGeneration = m_cells;
+
+    for (size_t i = 0; i < m_cells.size(); ++i) {
+        nextGeneration[i].alive = isCellAlive(m_cells[i]);
+    }
+
+    m_cells.swap(nextGeneration);
+}
+
+World::World(uint32_t xBounds, uint32_t yBounds, float temperature)
+    : m_xBounds(xBounds),
+      m_yBounds(yBounds)
 {
     fillWorld(temperature);
 }
 
 void World::run(int ticks) {
-    // print initial status
-    std::cout << "Start State: \n";
-    std::cout << toString() << "\n";
+    // Enter alternate screen buffer and hide cursor
+    std::cout << "\033[?1049h\033[?25l";
 
-    uint32_t i = 0;
-    while (i < ticks || ticks == -1) {
-        // simulate first tic
+    uint64_t i = 0;
+
+    while (ticks == -1 || i < static_cast<uint64_t>(ticks)) {
+        // Jump directly to top-left corner (row 1, col 1)
+        std::cout << "\033[HCurrent State (Tick " << i << "):\n"
+                  << toString() << std::flush;
+
         simulateTick();
-
-        // print current status
-        std::cout << toString() << "\n";
-        i++;
+        ++i;
     }
+
+    // Show cursor and exit alternate screen buffer
+    std::cout << "\033[?25h\033[?1049l" << std::flush;
+
+    // print final result
+    std::cout << "Final State (Tick " << i << "):\n" << toString() << std::flush;
 }
 
 std::string World::toString() const noexcept {
     std::string result;
-    
-    // xBounds and yBounds are inclusive
-    for (uint32_t y = 0; y <= m_yBounds; ++y) {
-        for (uint32_t x = 0; x <= m_xBounds; ++x) {
+
+    for (uint32_t y = 0; y < m_yBounds; ++y) {
+        for (uint32_t x = 0; x < m_xBounds; ++x) {
             const Cell& cell = m_cells[convert2Dto1D(x, y, m_xBounds)];
-            //                  alive   dead
-            result += cell.alive ? "." : " "; 
+
+            result += cell.alive ? "." : " ";
         }
 
-        result += "\n";
+        result += '\n';
     }
 
-    result += "==============================================================";
-    
     return result;
 }

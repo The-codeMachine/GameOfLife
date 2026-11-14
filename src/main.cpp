@@ -2,8 +2,8 @@
 
 int main() {
 
-    World world(10, 10, 0.);
-    world.run(5);
+    World world(50, 10, 0.5);
+    world.run(500);
 
     return 0;
-}5
+};
