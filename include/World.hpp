@@ -63,15 +63,12 @@ private:
     bool isCellAlive(Cell cell) const noexcept;
 
     /**
-     * Gets copies neighbours of a particular cell. 
+     * Gets a particular cell's neighbour's alive count. Checks every neighbour to see
+     * whether or not they are alive.
      * 
-     * @note does not include invalid cell positions (e.g. -1, -1).
-     * @note the neighbours are stored in order (from {-1, -1} to {1, 1} -- based off the 
-     * cell's position)
-     * 
-     * @return a vector containing copies of all the neighbours of a particular cell
+     * @return a number 0-8 (inclusive) that represents the number of alive neighbours
      */
-    std::vector<Cell> getNeighbours(Cell cell) const noexcept;
+    uint16_t getNeighbours(Cell cell) const noexcept;
 
     /**
      * Simulates one tick. Updates all appropriate values (m_cells).

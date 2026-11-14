@@ -43,44 +43,30 @@ void World::fillWorld(float temperature) {
     }
 }
 
-std::vector<Cell> World::getNeighbours(Cell cell) const noexcept {
-    std::vector<Cell> out;
-
-    const uint32_t x = cell.x;
-    const uint32_t y = cell.y;
-
+uint16_t World::getNeighbours(Cell cell) const noexcept {
     // Exclude the cell itself.
-    const uint32_t xStart = (x > 0) ? x - 1 : 0;
-    const uint32_t yStart = (y > 0) ? y - 1 : 0;
+    const uint32_t xStart = (cell.x > 0) ? cell.x - 1 : 0;
+    const uint32_t yStart = (cell.y > 0) ? cell.y - 1 : 0;
 
-    const uint32_t xEnd = std::min(x + 1, m_xBounds - 1);
-    const uint32_t yEnd = std::min(y + 1, m_yBounds - 1);
+    const uint32_t xEnd = std::min(cell.x + 1, m_xBounds - 1);
+    const uint32_t yEnd = std::min(cell.y + 1, m_yBounds - 1);
 
-    for (uint32_t j = yStart; j <= yEnd; ++j) {
-        for (uint32_t i = xStart; i <= xEnd; ++i) {
-            if (i == x && j == y) {
+    uint16_t count = 0;
+    for (uint32_t y = yStart; y <= yEnd; ++y) {
+        for (uint32_t x = xStart; x <= xEnd; ++x) {
+            if (x == cell.x && y == cell.y) {
                 continue;
             }
 
-            out.push_back(
-                m_cells[convert2Dto1D(i, j, m_xBounds)]
-            );
+            count += m_cells[convert2Dto1D(x, y, m_xBounds)].alive;
         }
     }
 
-    return out;
+    return count;
 }
 
 bool World::isCellAlive(Cell cell) const noexcept {
-    const std::vector<Cell> neighbours = getNeighbours(cell);
-
-    uint8_t aliveCounter = 0;
-
-    for (const Cell& neighbour : neighbours) {
-        if (neighbour.alive) {
-            ++aliveCounter;
-        }
-    }
+    const uint16_t aliveCounter = getNeighbours(cell);
 
     // Conway's Game of Life:
     // A live cell survives with 2 or 3 neighbours.
