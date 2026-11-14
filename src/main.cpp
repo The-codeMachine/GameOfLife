@@ -6,7 +6,7 @@ int main() {
 
     World world(10, 10);
 
-    world.run();
+    world.run(5);
 
     return 0;
 }

@@ -2,6 +2,7 @@
 
 #include <Cell.hpp>
 
+#include <string>
 #include <vector>
 
 /**
@@ -13,6 +14,8 @@ public:
     /**
      * Constructs the World with specific x and y bounds. The temperature defines
      * what the chances of a cell being generated per square is. 
+     * 
+     * bounds (xBounds and yBounds) are inclusive to 0
      */
     World(uint32_t xBounds, uint32_t yBounds, float temperature = 0.7);
 
@@ -33,7 +36,7 @@ public:
      * 
      * " " - dead cell
      * "." - alive cell
-     * "-" border
+     * "- / + / |" border
      * 
      * @return a string representing the World's current state. 
      */
@@ -46,7 +49,7 @@ private:
      * 
      * @return true if the cell will be alive during the next tick and false otherwise
      */
-    bool isCellAlive() const noexcept;
+    bool isCellAlive(Cell cell) const noexcept;
 
     /**
      * Gets copies neighbours of a particular cell. 
@@ -57,7 +60,7 @@ private:
      * 
      * @return a vector containing copies of all the neighbours of a particular cell
      */
-    std::vector<Cell> getNeighbours() noexcept;
+    std::vector<Cell> getNeighbours(Cell cell) const noexcept;
 
     /**
      * Simulates one tick. Updates all appropriate values (m_cells).
@@ -69,6 +72,6 @@ private:
     const uint32_t yBounds;
 
     // 1D representation of cells
-    std::vector<uint32_t, Cell> m_cells;
+    std::vector<Cell> m_cells;
 
 };
