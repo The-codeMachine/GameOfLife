@@ -16,6 +16,8 @@ public:
      * what the chances of a cell being generated per square is. 
      * 
      * bounds (xBounds and yBounds) are inclusive to 0
+     * 
+     * @note temperature is used as a percentage (e.g. 0.7 = 70%)
      */
     World(uint32_t xBounds, uint32_t yBounds, float temperature = 0.7);
 
@@ -36,13 +38,22 @@ public:
      * 
      * " " - dead cell
      * "." - alive cell
-     * "- / + / |" border
      * 
      * @return a string representing the World's current state. 
      */
     std::string toString() const noexcept;
 
 private: 
+    /**
+     * Fills the entire world. Bases how many cells exist off the temperature. For
+     * example if the temperature == 0.7 then each cell has a 70% chance of being
+     * alive. 
+     * 
+     * @note uses the same seed for all Worlds (for now, might change it)
+     * @note temperature is used as a percentage (e.g. 0.7 = 70%)
+     */
+    void fillWorld(float temperature) noexcept;
+
     /**
      * Checks whether or not a cell will be alive during the next tick of the
      * simulation.
@@ -68,8 +79,8 @@ private:
     void simulateTick();
 
 private:
-    const uint32_t xBounds;
-    const uint32_t yBounds;
+    const uint32_t m_xBounds;
+    const uint32_t m_yBounds;
 
     // 1D representation of cells
     std::vector<Cell> m_cells;

@@ -1,12 +1,9 @@
 #include <World.hpp>
 
-#include <iostream>
-
 int main() {
 
-    World world(10, 10);
-
+    World world(10, 10, 0.);
     world.run(5);
 
     return 0;
-}
+}5

@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Define the executable and list all .cpp files in src/
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/World.cpp
+    src/positionConversions.cpp
 )
 
 # Add the include/ directory for header lookups

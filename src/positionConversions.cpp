@@ -1,4 +1,4 @@
-#include <positionConversions.hpp>
+#include <utils/positionConversions.hpp>
 
 uint32_t convert2Dto1D(uint32_t x, uint32_t y, uint32_t xBounds) {
     return x + y * xBounds;
