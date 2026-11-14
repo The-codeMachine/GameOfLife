@@ -7,6 +7,7 @@
 #include <limits>
 #include <stdexcept>
 #include <cstdint>
+#include <thread>
 
 void World::fillWorld(float temperature) {
     static std::random_device rd;
@@ -96,7 +97,7 @@ World::World(uint32_t xBounds, uint32_t yBounds, float temperature)
     fillWorld(temperature);
 }
 
-void World::run(int ticks) {
+void World::run(int ticks, std::optional<std::chrono::milliseconds> pauseTime) {
     // Enter alternate screen buffer and hide cursor
     std::cout << "\033[?1049h\033[?25l";
 
@@ -104,10 +105,15 @@ void World::run(int ticks) {
 
     while (ticks == -1 || i < static_cast<uint64_t>(ticks)) {
         // Jump directly to top-left corner (row 1, col 1)
-        std::cout << "\033[HCurrent State (Tick " << i << "):\n"
-                  << toString() << std::flush;
+        std::cout << "\033[HCurrent State (Tick " << i << "):\n" << toString() << std::flush;
 
         simulateTick();
+
+        // pauses the simulation for the specified time 
+        if (pauseTime.has_value()) {
+            std::this_thread::sleep_for(*pauseTime);
+        }
+
         ++i;
     }
 

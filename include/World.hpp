@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+#include <optional>
+#include <chrono>
+
 /**
  * The World class contains all information about the simulation including all
  * the cells, their positional data, and alive/death information. 
@@ -28,9 +31,13 @@ public:
      * @param ticks represents the amount of ticks the simulation should move 
      * forward before terminating
      * 
+     * @param pauseTime represents the amount of time the program will wait 
+     * between ticks. This is for infinite simulations simply so we can 
+     * observe and see. 
+     * 
      * @note if ticks == -1 then it will never end.  
      */
-    void run(int ticks = -1);
+    void run(int ticks = -1, std::optional<std::chrono::milliseconds> pauseTime = std::chrono::milliseconds(1000));
 
     /**
      * Makes a string representation of the World. Will contain
