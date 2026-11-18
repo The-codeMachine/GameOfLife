@@ -2,18 +2,21 @@
 
 #include <SDL3/SDL_log.h>
 
-SDL_FRect Engine::createCellRenderingObject(Cell cell) {
+CellSprite Engine::createCellRenderingObject(Cell cell) {
     // for the border (so each square is 20 pixels with its border)
     static constexpr uint32_t SIDE_LENGTH = 19; // pixels
     
-    return {static_cast<float>(cell.x * SIDE_LENGTH), static_cast<float>(cell.y * SIDE_LENGTH), SIDE_LENGTH, SIDE_LENGTH};
+    //                          x position                              y position                          width       height
+    SDL_FRect frect = {static_cast<float>(cell.x * SIDE_LENGTH), static_cast<float>(cell.y * SIDE_LENGTH), SIDE_LENGTH, SIDE_LENGTH};
+
+    return {frect, cell.alive};
 }
 
-std::vector<SDL_FRect> Engine::createCellsRenderingObject() {
+std::vector<CellSprite> Engine::createCellsRenderingObject() {
     const std::vector<Cell>& cells = m_world.cells();
     size_t cellsSize = cells.size();
     
-    std::vector<SDL_FRect> out(cellsSize); 
+    std::vector<CellSprite> out(cellsSize); 
 
     for (uint64_t i = 0; i < cellsSize; ++i) {
         out[i] = createCellRenderingObject(cells[i]); 
@@ -33,7 +36,7 @@ void Engine::drawBorderedFRect(const SDL_FRect* rect, SDL_Color fillColor, SDL_C
 }
 
 void Engine::drawCells() {
-    const std::vector<SDL_FRect> cells = createCellsRenderingObject();
+    const std::vector<CellSprite> cells = createCellsRenderingObject();
     const uint64_t cellsSize = cells.size();
     
     static constexpr SDL_Color fillColorAlive = {255, 255, 255, 1};
@@ -41,7 +44,9 @@ void Engine::drawCells() {
     static constexpr SDL_Color borderColor = {0, 0, 0, 1};
 
     for (uint64_t i = 0; i < cellsSize; ++i) {
-        drawBorderedFRect(&cells[i], fillColorAlive, borderColor);
+        const CellSprite& sprite = cells[i];
+        
+        drawBorderedFRect(&sprite.frect, sprite.alive ? fillColorAlive : fillColorDead, borderColor);
     }
 }
 

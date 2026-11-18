@@ -1,8 +1,7 @@
 #pragma once
 
-#include <SDL3/SDL.h>
-
 #include <Cell.hpp>
+#include <rendering/CellRendering.hpp>
 #include <World.hpp>
 
 class Engine {
@@ -32,13 +31,13 @@ private:
      * 
      * @param cell
      */
-    static SDL_FRect createCellRenderingObject(Cell cell);
+    static CellSprite createCellRenderingObject(Cell cell);
 
     /**
      * Creates a vector of FRect for all the Cells in the World this
      * Renderer engine is connected to. 
      */
-    std::vector<SDL_FRect> createCellsRenderingObject();
+    std::vector<CellSprite> createCellsRenderingObject();
 
     /**
      * Draws a bordered rectangle (using the FRect object) using this 

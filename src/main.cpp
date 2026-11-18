@@ -8,7 +8,7 @@
 int main(int argc, char* argv[]) {
 
     // Test engine
-    World w(100, 100, 0.5);
+    World w(20, 20, 0.5);
     Engine e(w);
 
     e.render();
