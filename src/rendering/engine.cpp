@@ -6,7 +6,7 @@ SDL_FRect Engine::createCellRenderingObject(Cell cell) {
     // for the border (so each square is 20 pixels with its border)
     static constexpr uint32_t SIDE_LENGTH = 19; // pixels
     
-    return {static_cast<float>(cell.x), static_cast<float>(cell.y), SIDE_LENGTH, SIDE_LENGTH};
+    return {static_cast<float>(cell.x * SIDE_LENGTH), static_cast<float>(cell.y * SIDE_LENGTH), SIDE_LENGTH, SIDE_LENGTH};
 }
 
 std::vector<SDL_FRect> Engine::createCellsRenderingObject() {
@@ -16,7 +16,7 @@ std::vector<SDL_FRect> Engine::createCellsRenderingObject() {
     std::vector<SDL_FRect> out(cellsSize); 
 
     for (uint64_t i = 0; i < cellsSize; ++i) {
-        out[i] = createCellRenderingObject(cells[i]);    
+        out[i] = createCellRenderingObject(cells[i]); 
     }
 
     return out;
@@ -36,11 +36,12 @@ void Engine::drawCells() {
     const std::vector<SDL_FRect> cells = createCellsRenderingObject();
     const uint64_t cellsSize = cells.size();
     
-    static constexpr SDL_Color fillColor = {255, 255, 255, 1};
+    static constexpr SDL_Color fillColorAlive = {255, 255, 255, 1};
+    static constexpr SDL_Color fillColorDead = {100, 100, 100, 1};
     static constexpr SDL_Color borderColor = {0, 0, 0, 1};
 
     for (uint64_t i = 0; i < cellsSize; ++i) {
-        drawBorderedFRect(&cells[i], fillColor, borderColor);
+        drawBorderedFRect(&cells[i], fillColorAlive, borderColor);
     }
 }
 
