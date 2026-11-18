@@ -1,26 +1,47 @@
-#include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
 #include <World.hpp>
-
 #include <rendering/Engine.hpp>
+
+#include <iostream>
+#include <thread>
+#include <atomic>
 
 int main(int argc, char* argv[]) {
 
-    // Test engine
     World w(20, 20, 0.5);
     Engine e(w);
 
-    e.render();
+    std::atomic<bool> running = true;
 
-    /*
+    std::thread simulationThread([&]() {
+        w.run();
+    });
 
-    World world(100, 60, 0.6);
+    std::thread renderingThread([&]() {
+        e.render();
+    });
 
-    // infinite simulation with 1 second pause
-    world.run(-1, std::chrono::milliseconds(500));
+    std::string in;
 
-    */
+    while (running && std::getline(std::cin, in)) {
+        if (in == "stop") {
+            running = false;
+        }
+    }
+
+    // Signal both threads to terminate.
+    e.stop();
+    w.stop();
+
+    // Wait for both threads to finish.
+    if (renderingThread.joinable()) {
+        renderingThread.join();
+    }
+
+    if (simulationThread.joinable()) {
+        simulationThread.join();
+    }
 
     return 0;
-};
+}

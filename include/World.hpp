@@ -55,6 +55,12 @@ public:
     void run(int ticks = -1, std::optional<std::chrono::milliseconds> pauseTime = std::chrono::milliseconds(1000));
 
     /**
+     * Makes the simulation stop immediately. Ends the entire run and preserves
+     * the state. 
+     */
+    void stop();
+
+    /**
      * Makes a string representation of the World. Will contain
      * basic characters for cells.
      * 
@@ -103,5 +109,8 @@ private:
 
     // 1D representation of cells
     std::vector<Cell> m_cells;
+
+    // whether or not the simulation is running
+    bool m_running;
 
 };

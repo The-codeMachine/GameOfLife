@@ -51,7 +51,7 @@ void Engine::drawCells() {
 }
 
 
-Engine::Engine(World& world, const uint32_t width, const uint32_t height) : m_world(world) 
+Engine::Engine(World& world, const uint32_t width, const uint32_t height) : m_world(world), m_running(false)
 {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL_INIT failed");
@@ -71,22 +71,22 @@ Engine::~Engine() {
 }
 
 void Engine::render() {
-    bool running = true;
+    m_running = true;
     SDL_Event event;
 
-    while (running) {
+    while (m_running) {
         // Event handling (escape key, exit button)
 
         while (SDL_PollEvent(&event)) {
             switch (event.type)
             {
             case SDL_EVENT_QUIT:
-                running = false;
+                m_running = false;
                 break;
             
             case SDL_EVENT_KEY_DOWN:
                 if (event.key.key == SDLK_ESCAPE) {
-                    running = false;
+                    m_running = false;
                 }
                 break;
 
@@ -102,4 +102,8 @@ void Engine::render() {
 
         SDL_RenderPresent(m_renderer);
     }
+}
+
+void Engine::stop() {
+    m_running = false;
 }

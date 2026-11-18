@@ -18,7 +18,7 @@ public:
     void render();
 
     /**
-     * Stops rendering the simulation at once. It will kill the
+     * Stops rendering the simulation at once. It will end the
      * rendering but not the simulation.
      */
     void stop();
@@ -62,5 +62,7 @@ private:
 
     SDL_Window* m_window;
     SDL_Renderer* m_renderer;
+
+    bool m_running;
 
 };

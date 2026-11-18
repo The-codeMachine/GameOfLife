@@ -3,7 +3,6 @@
 
 #include <random>
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <cstdint>
@@ -92,7 +91,8 @@ void World::simulateTick() {
 
 World::World(uint32_t xBounds, uint32_t yBounds, float temperature)
     : m_xBounds(xBounds),
-      m_yBounds(yBounds)
+      m_yBounds(yBounds),
+      m_running(false)
 {
     fillWorld(temperature);
 }
@@ -106,14 +106,10 @@ const std::vector<Cell>& World::cells() const noexcept {
 }
 
 void World::run(int ticks, std::optional<std::chrono::milliseconds> pauseTime) {
-    // Enter alternate screen buffer and hide cursor
-    std::cout << "\033[?1049h\033[?25l";
-
     uint64_t i = 0;
 
-    while (ticks == -1 || i < static_cast<uint64_t>(ticks)) {
-        // Jump directly to top-left corner (row 1, col 1)
-        std::cout << "\033[HCurrent State (Tick " << i << "):\n" << toString() << std::flush;
+    m_running = true;
+    while (m_running) {
 
         simulateTick();
 
@@ -122,14 +118,15 @@ void World::run(int ticks, std::optional<std::chrono::milliseconds> pauseTime) {
             std::this_thread::sleep_for(*pauseTime);
         }
 
+        // stops running after x ticks or infinitely if ticks == -1
+        m_running = i < ticks || ticks == -1;
+
         ++i;
     }
+}
 
-    // Show cursor and exit alternate screen buffer
-    std::cout << "\033[?25h\033[?1049l" << std::flush;
-
-    // print final result
-    std::cout << "Final State (Tick " << i << "):\n" << toString() << std::flush;
+void World::stop() {
+    m_running = false;
 }
 
 std::string World::toString() const noexcept {
