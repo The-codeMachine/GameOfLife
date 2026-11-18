@@ -2,13 +2,56 @@
 
 #include <SDL3/SDL_log.h>
 
-Engine::Engine(World& world, const uint32_t width, const uint32_t height) : world(world) 
+SDL_FRect Engine::createCellRenderingObject(Cell cell) {
+    // for the border (so each square is 20 pixels with its border)
+    static constexpr uint32_t SIDE_LENGTH = 19; // pixels
+    
+    return {static_cast<float>(cell.x), static_cast<float>(cell.y), SIDE_LENGTH, SIDE_LENGTH};
+}
+
+std::vector<SDL_FRect> Engine::createCellsRenderingObject() {
+    const std::vector<Cell>& cells = m_world.cells();
+    size_t cellsSize = cells.size();
+    
+    std::vector<SDL_FRect> out(cellsSize); 
+
+    for (uint64_t i = 0; i < cellsSize; ++i) {
+        out[i] = createCellRenderingObject(cells[i]);    
+    }
+
+    return out;
+}
+
+void Engine::drawBorderedFRect(const SDL_FRect* rect, SDL_Color fillColor, SDL_Color borderColor) {
+    // fill interior
+    SDL_SetRenderDrawColor(m_renderer, fillColor.r, fillColor.g, fillColor.b, fillColor.a);
+    SDL_RenderFillRect(m_renderer, rect);
+
+    // draw border
+    SDL_SetRenderDrawColor(m_renderer, borderColor.r, borderColor.g, borderColor.b, borderColor.a);
+    SDL_RenderRect(m_renderer, rect);
+}
+
+void Engine::drawCells() {
+    const std::vector<SDL_FRect> cells = createCellsRenderingObject();
+    const uint64_t cellsSize = cells.size();
+    
+    static constexpr SDL_Color fillColor = {255, 255, 255, 1};
+    static constexpr SDL_Color borderColor = {0, 0, 0, 1};
+
+    for (uint64_t i = 0; i < cellsSize; ++i) {
+        drawBorderedFRect(&cells[i], fillColor, borderColor);
+    }
+}
+
+
+Engine::Engine(World& world, const uint32_t width, const uint32_t height) : m_world(world) 
 {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL_INIT failed");
     }
 
-    if (!SDL_CreateWindowAndRenderer("Conway's Game Of Life", width, height, 0, &m_window, &m_renderer)) {
+    if (!SDL_CreateWindowAndRenderer("Conway's Game Of Life", width, height, SDL_WINDOW_RESIZABLE, &m_window, &m_renderer)) {
         SDL_Log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
         throw std::runtime_error("SDL_CreateWindowAndRenderer failed");
     }
@@ -26,6 +69,8 @@ void Engine::render() {
     SDL_Event event;
 
     while (running) {
+        // Event handling (escape key, exit button)
+
         while (SDL_PollEvent(&event)) {
             switch (event.type)
             {
@@ -47,7 +92,7 @@ void Engine::render() {
 
         SDL_RenderClear(m_renderer);
 
-        SDL_SetRenderDrawColor(m_renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+        drawCells();
 
         SDL_RenderPresent(m_renderer);
     }

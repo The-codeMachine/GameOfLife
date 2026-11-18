@@ -97,6 +97,14 @@ World::World(uint32_t xBounds, uint32_t yBounds, float temperature)
     fillWorld(temperature);
 }
 
+std::vector<Cell> World::cells() {
+    return m_cells;
+}
+
+const std::vector<Cell>& World::cells() const noexcept {
+    return m_cells;
+}
+
 void World::run(int ticks, std::optional<std::chrono::milliseconds> pauseTime) {
     // Enter alternate screen buffer and hide cursor
     std::cout << "\033[?1049h\033[?25l";

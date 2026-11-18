@@ -27,19 +27,39 @@ public:
 private:
 
     /**
-     * 
+     * Creates an FRect for a single Cell. Includes its position
+     * and size data (as well as a border).
      * 
      * @param cell
      */
-    static void createCellRenderingObject(Cell cell);
+    static SDL_FRect createCellRenderingObject(Cell cell);
 
     /**
-     * 
+     * Creates a vector of FRect for all the Cells in the World this
+     * Renderer engine is connected to. 
      */
-    void createRenderingObject();
+    std::vector<SDL_FRect> createCellsRenderingObject();
+
+    /**
+     * Draws a bordered rectangle (using the FRect object) using this 
+     * Engine's renderer. Fills the interior with a certain colour and
+     * the extior (border) with another. Border thickness is always 1
+     * pixel. 
+     * 
+     * @param rect the dimensions and position of the rectangle
+     * @param fillColor the color of the interior of the rectangle
+     * @param borderColor the color of the border of the rectangle
+     */
+    void drawBorderedFRect(const SDL_FRect* rect, SDL_Color fillColor, SDL_Color borderColor);
+
+    /**
+     * Draws all of the connected World's cells. Will generate a FRect
+     * for each cell, then draw each one. 
+     */
+    void drawCells();
 
 private:
-    World& world;    
+    World& m_world;    
 
     SDL_Window* m_window;
     SDL_Renderer* m_renderer;

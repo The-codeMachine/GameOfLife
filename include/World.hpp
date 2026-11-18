@@ -25,6 +25,21 @@ public:
     World(uint32_t xBounds, uint32_t yBounds, float temperature = 0.7);
 
     /**
+     * Gets a copy of all the cells in this World
+     * 
+     * @return a vector consists of all the Cells in this World
+     */
+    std::vector<Cell> cells();
+
+    /**
+     * Gets all the cells in this world and returns a read-only copy.
+     * 
+     * @return a read-only reference to a vector consisting of all the cells in this
+     * World
+     */
+    const std::vector<Cell>& cells() const noexcept;
+
+    /**
      * Runs the World's simulation. Makes a string representation of the World
      * and prints that at the end of every tick. 
      * 
