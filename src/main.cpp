@@ -3,41 +3,21 @@
 #include <World.hpp>
 #include <rendering/Engine.hpp>
 
-#include <iostream>
 #include <thread>
-#include <atomic>
 
 int main(int argc, char* argv[]) {
-
-    World w(20, 20, 0.5);
+    World w(1000, 1000, 0.5);
     Engine e(w);
 
-    std::atomic<bool> running = true;
-
-    std::thread simulationThread([&]() {
+    std::thread simulationThread([&w]() {
         w.run();
     });
 
-    std::thread renderingThread([&]() {
-        e.render();
-    });
+    // SDL rendering and event processing on the main thread.
+    e.render();
 
-    std::string in;
-
-    while (running && std::getline(std::cin, in)) {
-        if (in == "stop") {
-            running = false;
-        }
-    }
-
-    // Signal both threads to terminate.
-    e.stop();
+    // Stop the simulation when the window closes.
     w.stop();
-
-    // Wait for both threads to finish.
-    if (renderingThread.joinable()) {
-        renderingThread.join();
-    }
 
     if (simulationThread.joinable()) {
         simulationThread.join();

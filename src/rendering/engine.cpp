@@ -2,6 +2,8 @@
 
 #include <SDL3/SDL_log.h>
 
+#include <iostream>
+
 CellSprite Engine::createCellRenderingObject(Cell cell) {
     // for the border (so each square is 20 pixels with its border)
     static constexpr uint32_t SIDE_LENGTH = 19; // pixels
@@ -13,7 +15,7 @@ CellSprite Engine::createCellRenderingObject(Cell cell) {
 }
 
 std::vector<CellSprite> Engine::createCellsRenderingObject() {
-    const std::vector<Cell>& cells = m_world.cells();
+    const std::vector<Cell> cells = m_world.cells();
     size_t cellsSize = cells.size();
     
     std::vector<CellSprite> out(cellsSize); 
@@ -51,7 +53,7 @@ void Engine::drawCells() {
 }
 
 
-Engine::Engine(World& world, const uint32_t width, const uint32_t height) : m_world(world), m_running(false)
+Engine::Engine(World& world, const uint32_t width, const uint32_t height) : m_world(world)
 {
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         throw std::runtime_error("SDL_INIT failed");
@@ -74,25 +76,29 @@ void Engine::render() {
     m_running = true;
     SDL_Event event;
 
-    while (m_running) {
+    while (m_running.load(std::memory_order_relaxed)) {
         // Event handling (escape key, exit button)
 
         while (SDL_PollEvent(&event)) {
             switch (event.type)
             {
             case SDL_EVENT_QUIT:
-                m_running = false;
+                stop();
                 break;
             
             case SDL_EVENT_KEY_DOWN:
                 if (event.key.key == SDLK_ESCAPE) {
-                    m_running = false;
+                    stop();
                 }
                 break;
 
             default:
                 break;
             }
+        }
+
+        if (!m_running.load(std::memory_order_relaxed)) {
+            break;
         }
 
 
@@ -105,5 +111,5 @@ void Engine::render() {
 }
 
 void Engine::stop() {
-    m_running = false;
+    m_running.store(false, std::memory_order_relaxed);
 }

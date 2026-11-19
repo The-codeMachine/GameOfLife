@@ -4,6 +4,8 @@
 #include <rendering/CellRendering.hpp>
 #include <World.hpp>
 
+#include <atomic>
+
 class Engine {
 public:
 
@@ -63,6 +65,6 @@ private:
     SDL_Window* m_window;
     SDL_Renderer* m_renderer;
 
-    bool m_running;
+    std::atomic<bool> m_running{false};
 
 };

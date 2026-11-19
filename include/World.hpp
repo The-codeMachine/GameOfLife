@@ -8,6 +8,10 @@
 #include <optional>
 #include <chrono>
 
+#include <atomic>
+#include <mutex>
+#include <shared_mutex>
+
 /**
  * The World class contains all information about the simulation including all
  * the cells, their positional data, and alive/death information. 
@@ -82,13 +86,33 @@ private:
      */
     void fillWorld(float temperature);
 
+     /**
+     * Checks whether or not a cell will be alive during the next tick of the
+     * simulation.
+     * 
+     * @note assumes the mutex is already held
+     * 
+     * @return true if the cell will be alive during the next tick and false otherwise
+     */
+    bool isCellAliveUnlocked(Cell cell) const;
+
+    /**
+     * Gets a particular cell's neighbour's alive count. Checks every neighbour to see
+     * whether or not they are alive.
+     * 
+     * @note assumes the mutex is already held
+     * 
+     * @return a number 0-8 (inclusive) that represents the number of alive neighbours
+     */
+    uint16_t getNeighboursUnlocked(Cell cell) const;
+
     /**
      * Checks whether or not a cell will be alive during the next tick of the
      * simulation.
      * 
      * @return true if the cell will be alive during the next tick and false otherwise
      */
-    bool isCellAlive(Cell cell) const noexcept;
+    bool isCellAlive(Cell cell) const;
 
     /**
      * Gets a particular cell's neighbour's alive count. Checks every neighbour to see
@@ -96,7 +120,7 @@ private:
      * 
      * @return a number 0-8 (inclusive) that represents the number of alive neighbours
      */
-    uint16_t getNeighbours(Cell cell) const noexcept;
+    uint16_t getNeighbours(Cell cell) const;
 
     /**
      * Simulates one tick. Updates all appropriate values (m_cells).
@@ -104,13 +128,15 @@ private:
     void simulateTick();
 
 private:
-    const uint32_t m_xBounds;
-    const uint32_t m_yBounds;
+    uint32_t m_xBounds;
+    uint32_t m_yBounds;
 
     // 1D representation of cells
     std::vector<Cell> m_cells;
 
+    mutable std::shared_mutex m_cellsMutex;
+
     // whether or not the simulation is running
-    bool m_running;
+    std::atomic<bool> m_running{false};
 
 };

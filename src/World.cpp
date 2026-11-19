@@ -6,52 +6,59 @@
 #include <limits>
 #include <stdexcept>
 #include <cstdint>
+
+#include <mutex>
 #include <thread>
 
 void World::fillWorld(float temperature) {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-
     // Clamp temperature to the valid probability range.
     temperature = std::clamp(temperature, 0.0f, 1.0f);
+    
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
 
     std::bernoulli_distribution distrib(temperature);
 
     const uint64_t width = m_xBounds;
     const uint64_t height = m_yBounds;
 
-    if (width == 0 || height == 0) {
-        m_cells.clear();
-        return;
-    }
-
-    if (width * height > std::numeric_limits<size_t>::max()) {
+    if (height != 0 && width > std::numeric_limits<size_t>::max() / height) {
         throw std::length_error("World dimensions are too large.");
     }
 
-    const uint64_t indexMax = width * height;
-    m_cells.resize(static_cast<size_t>(indexMax));
+    const size_t cellCount = width * height;
+    std::vector<Cell> newCells(cellCount);
 
-    for (uint64_t i = 0; i < indexMax; ++i) {
+    for (size_t i = 0; i < cellCount; ++i) {
         const auto [x, y] = convert1Dto2D(i, m_xBounds);
 
-        m_cells[i] = {
+        newCells[i] = {
             distrib(gen),
             static_cast<uint32_t>(x),
             static_cast<uint32_t>(y)
         };
     }
+
+    {
+        std::unique_lock loc(m_cellsMutex);
+        m_cells.swap(newCells);
+    }
 }
 
-uint16_t World::getNeighbours(Cell cell) const noexcept {
-    // Exclude the cell itself.
-    const uint32_t xStart = (cell.x > 0) ? cell.x - 1 : 0;
-    const uint32_t yStart = (cell.y > 0) ? cell.y - 1 : 0;
+uint16_t World::getNeighboursUnlocked(Cell cell) const {
+    if (m_xBounds == 0 || m_yBounds == 0 ||
+        cell.x >= m_xBounds || cell.y >= m_yBounds) {
+        return 0;
+    }
+
+    const uint32_t xStart = cell.x > 0 ? cell.x - 1 : 0;
+    const uint32_t yStart = cell.y > 0 ? cell.y - 1 : 0;
 
     const uint32_t xEnd = std::min(cell.x + 1, m_xBounds - 1);
     const uint32_t yEnd = std::min(cell.y + 1, m_yBounds - 1);
 
     uint16_t count = 0;
+
     for (uint32_t y = yStart; y <= yEnd; ++y) {
         for (uint32_t x = xStart; x <= xEnd; ++x) {
             if (x == cell.x && y == cell.y) {
@@ -65,8 +72,8 @@ uint16_t World::getNeighbours(Cell cell) const noexcept {
     return count;
 }
 
-bool World::isCellAlive(Cell cell) const noexcept {
-    const uint16_t aliveCounter = getNeighbours(cell);
+bool World::isCellAliveUnlocked(Cell cell) const {
+    const uint16_t aliveCounter = getNeighboursUnlocked(cell);
 
     // Conway's Game of Life:
     // A live cell survives with 2 or 3 neighbours.
@@ -78,12 +85,25 @@ bool World::isCellAlive(Cell cell) const noexcept {
 
     return aliveCounter == 3;
 }
+ 
+uint16_t World::getNeighbours(Cell cell) const {
+    std::shared_lock lock(m_cellsMutex);
+    return getNeighboursUnlocked(cell);
+}
+
+bool World::isCellAlive(Cell cell) const {
+    std::shared_lock lock(m_cellsMutex);
+    return isCellAliveUnlocked(cell);
+}
 
 void World::simulateTick() {
-    std::vector<Cell> nextGeneration = m_cells;
+    std::unique_lock lock(m_cellsMutex);
 
-    for (size_t i = 0; i < m_cells.size(); ++i) {
-        nextGeneration[i].alive = isCellAlive(m_cells[i]);
+    std::vector<Cell> nextGeneration = m_cells;
+    size_t cellsSize = m_cells.size();
+
+    for (size_t i = 0; i < cellsSize; ++i) {
+        nextGeneration[i].alive = isCellAliveUnlocked(m_cells[i]);
     }
 
     m_cells.swap(nextGeneration);
@@ -91,45 +111,50 @@ void World::simulateTick() {
 
 World::World(uint32_t xBounds, uint32_t yBounds, float temperature)
     : m_xBounds(xBounds),
-      m_yBounds(yBounds),
-      m_running(false)
+      m_yBounds(yBounds)
 {
     fillWorld(temperature);
 }
 
 std::vector<Cell> World::cells() {
+    std::shared_lock lock(m_cellsMutex);
     return m_cells;
 }
 
 const std::vector<Cell>& World::cells() const noexcept {
+    std::shared_lock lock(m_cellsMutex);
     return m_cells;
 }
 
 void World::run(int ticks, std::optional<std::chrono::milliseconds> pauseTime) {
-    uint64_t i = 0;
+    if (ticks < -1) {
+        throw std::invalid_argument("ticks must be -1 or non-negative.");
+    }
 
-    m_running = true;
-    while (m_running) {
+    m_running.store(true, std::memory_order_relaxed);
+
+    for (int i = 0; ticks == -1 || i < ticks; ++i) {
+        if (!m_running.load(std::memory_order_relaxed)) {
+            break;
+        }
 
         simulateTick();
 
-        // pauses the simulation for the specified time 
-        if (pauseTime.has_value()) {
+        if (pauseTime.has_value() && *pauseTime > std::chrono::milliseconds::zero()) {
             std::this_thread::sleep_for(*pauseTime);
         }
-
-        // stops running after x ticks or infinitely if ticks == -1
-        m_running = i < ticks || ticks == -1;
-
-        ++i;
     }
+
+    m_running.store(false, std::memory_order_relaxed);
 }
 
 void World::stop() {
-    m_running = false;
+    m_running.store(false, std::memory_order_relaxed);
 }
 
 std::string World::toString() const noexcept {
+    std::shared_lock lock(m_cellsMutex);
+
     std::string result;
 
     for (uint32_t y = 0; y < m_yBounds; ++y) {
